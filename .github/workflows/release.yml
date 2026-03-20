@@ -117,6 +117,7 @@ jobs:
           fi
 
           # ── Contributors (Name + @username) ──────────────
+          # Tries: 1) noreply email pattern  2) GitHub API email lookup
           CONTRIBUTORS=""
           git log "$RANGE" --pretty=format:"%aN||%aE" --no-merges 2>/dev/null | sort -u -t'|' -k1,1 > /tmp/authors.txt || true
 
@@ -127,9 +128,23 @@ jobs:
 
             [ "$author" = "dependabot[bot]" ] && continue
 
+            GH_USER=""
+
+            # Method 1: GitHub noreply email (123+username@users.noreply.github.com)
             GH_USER=$(echo "$email" | grep -oP '\d+\+\K[^@]+(?=@users.noreply.github.com)' 2>/dev/null || echo "")
+
+            # Method 2: Look up email via GitHub API
+            if [ -z "$GH_USER" ] && [ -n "$email" ]; then
+              GH_USER=$(gh api "/search/users?q=$email+in:email" -q '.items[0].login' 2>/dev/null || echo "")
+            fi
+
+            # Method 3: Search by name as fallback
+            if [ -z "$GH_USER" ] && [ -n "$author" ]; then
+              GH_USER=$(gh api "/search/users?q=$author+in:name" -q '.items[0].login' 2>/dev/null || echo "")
+            fi
+
             if [ -n "$GH_USER" ]; then
-              CONTRIBUTORS="${CONTRIBUTORS}- **${author}** (@${GH_USER})\n"
+              CONTRIBUTORS="${CONTRIBUTORS}- **${author}** ([@${GH_USER}](https://github.com/${GH_USER}))\n"
             else
               CONTRIBUTORS="${CONTRIBUTORS}- **${author}**\n"
             fi
