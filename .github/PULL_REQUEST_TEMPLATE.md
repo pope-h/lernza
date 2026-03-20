@@ -1,34 +1,31 @@
 ## What does this PR do?
 
-<!-- A clear description of the change. -->
+<!-- Describe the change in 1-3 sentences -->
 
 ## Related Issue
 
-<!-- Link the issue this PR addresses. Use "closes #XX" to auto-close it. -->
-
-closes #
+Closes #<!-- issue number -->
 
 ## Type of Change
 
 - [ ] Bug fix
 - [ ] New feature
-- [ ] Refactor (no functional change)
+- [ ] Refactor (no behavior change)
 - [ ] Documentation
+- [ ] Infrastructure / CI
 - [ ] Tests
-- [ ] CI / Infrastructure
 
 ## Checklist
 
-- [ ] I have read the [contributing guidelines](CONTRIBUTING.md)
-- [ ] My code follows the existing code style
-- [ ] I have added tests for my changes (if applicable)
-- [ ] All existing tests pass (`cargo test --workspace` / `pnpm build`)
-- [ ] I have updated documentation if needed
+- [ ] I have read the [Contributing Guide](CONTRIBUTING.md)
+- [ ] My PR title follows [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat:`, `fix:`, `refactor:`)
+- [ ] I have added at least one label to this PR
+- [ ] I have added/updated tests for my changes (if applicable)
+- [ ] `cargo test --workspace` passes (if contracts changed)
+- [ ] `pnpm build` passes (if frontend changed)
+- [ ] `cargo fmt --all -- --check` passes (if Rust changed)
+- [ ] `pnpm lint` passes (if frontend changed)
 
 ## Screenshots
 
-<!-- For UI changes, include before/after screenshots. -->
-
-## Notes
-
-<!-- Anything else reviewers should know. -->
+<!-- If UI changes, add before/after screenshots -->
