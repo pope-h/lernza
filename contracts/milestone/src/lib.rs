@@ -30,6 +30,14 @@ pub struct QuestInfo {
     pub description: String,
     pub token_addr: Address,
     pub created_at: u64,
+    pub visibility: Visibility,
+}
+
+#[contracttype]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Visibility {
+    Public = 0,
+    Private = 1,
 }
 
 // Milestone contract: define milestones per quest, track completions.
