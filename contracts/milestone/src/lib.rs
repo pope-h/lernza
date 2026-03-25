@@ -1,5 +1,7 @@
 #![no_std]
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, contractclient, Address, Env, String, Vec};
+use soroban_sdk::{
+    contract, contractclient, contracterror, contractimpl, contracttype, Address, Env, String, Vec,
+};
 
 // Quest contract error type (must match the quest contract)
 #[contracterror]
@@ -120,13 +122,15 @@ impl MilestoneContract {
     /// Must be called once before any milestones can be created.
     pub fn initialize(env: Env, admin: Address, quest_contract: Address) -> Result<(), Error> {
         admin.require_auth();
-        
+
         // Prevent re-initialization
         if env.storage().instance().has(&DataKey::QuestContract) {
             return Err(Error::Unauthorized);
         }
-        
-        env.storage().instance().set(&DataKey::QuestContract, &quest_contract);
+
+        env.storage()
+            .instance()
+            .set(&DataKey::QuestContract, &quest_contract);
         env.storage().instance().extend_ttl(THRESHOLD, BUMP);
         Ok(())
     }
@@ -157,7 +161,7 @@ impl MilestoneContract {
         // Cross-contract validation: verify caller is the actual quest owner
         let quest_client = QuestClient::new(&env, &quest_contract_addr);
         let quest_info = quest_client.get_quest(&quest_id);
-        
+
         // If quest doesn't exist, this will fail with NotFound from quest contract
         // If it exists, verify the caller is the owner
         if quest_info.owner != owner {
@@ -248,7 +252,7 @@ impl MilestoneContract {
         enrollee: Address,
     ) -> Result<i128, Error> {
         owner.require_auth();
-        
+
         // Validate owner via cross-contract call
         let quest_contract_addr: Address = env
             .storage()
@@ -258,7 +262,7 @@ impl MilestoneContract {
 
         let quest_client = QuestClient::new(&env, &quest_contract_addr);
         let quest_info = quest_client.get_quest(&quest_id);
-        
+
         if quest_info.owner != owner {
             return Err(Error::Unauthorized);
         }
@@ -417,7 +421,8 @@ impl MilestoneContract {
         }
 
         // Check if peer has already approved this submission
-        let approval_key = DataKey::PeerApproval(quest_id, milestone_id, enrollee.clone(), peer.clone());
+        let approval_key =
+            DataKey::PeerApproval(quest_id, milestone_id, enrollee.clone(), peer.clone());
         if env.storage().persistent().has(&approval_key) {
             return Err(Error::AlreadyApproved);
         }
@@ -467,8 +472,14 @@ impl MilestoneContract {
 
             // Increment enrollee's completion count for this quest
             let enrollee_count_key = DataKey::EnrolleeCompletions(quest_id, enrollee.clone());
-            let count: u32 = env.storage().persistent().get(&enrollee_count_key).unwrap_or(0);
-            env.storage().persistent().set(&enrollee_count_key, &(count + 1));
+            let count: u32 = env
+                .storage()
+                .persistent()
+                .get(&enrollee_count_key)
+                .unwrap_or(0);
+            env.storage()
+                .persistent()
+                .set(&enrollee_count_key, &(count + 1));
             env.storage()
                 .persistent()
                 .extend_ttl(&enrollee_count_key, THRESHOLD, BUMP);
@@ -589,7 +600,7 @@ impl MilestoneContract {
         // Cross-contract validation: verify caller is the actual quest owner
         let quest_client = QuestClient::new(env, &quest_contract_addr);
         let quest_info = quest_client.get_quest(&quest_id);
-        
+
         // If quest doesn't exist, this will fail with NotFound from quest contract
         // If it exists, verify the caller is the owner
         if quest_info.owner != *owner {
@@ -609,7 +620,7 @@ impl MilestoneContract {
 
         // Cross-contract call to check enrollment
         let _quest_client = QuestClient::new(_env, &quest_contract_addr);
-        
+
         // For now, we'll assume a function exists to check enrollment
         // In a real implementation, you'd call quest_client.is_enrolled(quest_id, user)
         // For this example, we'll return true (meaning the user is enrolled)

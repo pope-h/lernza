@@ -15,20 +15,20 @@ fn setup() -> (
 ) {
     let env = Env::default();
     env.mock_all_auths();
-    
+
     // Register quest contract
     let quest_contract_id = env.register(QuestContract, ());
     let quest_client = QuestContractClient::new(&env, &quest_contract_id);
-    
+
     // Register milestone contract
     let milestone_contract_id = env.register(MilestoneContract, ());
     let milestone_client = MilestoneContractClient::new(&env, &milestone_contract_id);
-    
+
     let admin = Address::generate(&env);
-    
+
     // Initialize milestone contract with quest contract address
     milestone_client.initialize(&admin, &quest_contract_id);
-    
+
     (env, milestone_client, quest_client, admin)
 }
 
@@ -53,7 +53,7 @@ fn create_ms(
             &Visibility::Public,
         );
     }
-    
+
     milestone_client.create_milestone(
         owner,
         &quest_id,
@@ -66,7 +66,15 @@ fn create_ms(
 #[test]
 fn test_create_milestone() {
     let (env, client, quest_client, owner) = setup();
-    let id = create_ms(&env, &client, &quest_client, &owner, 0, "Build your first API", 100);
+    let id = create_ms(
+        &env,
+        &client,
+        &quest_client,
+        &owner,
+        0,
+        "Build your first API",
+        100,
+    );
     assert_eq!(id, 0);
     assert_eq!(client.get_milestone_count(&0), 1);
 
@@ -122,7 +130,15 @@ fn test_get_milestones() {
 #[test]
 fn test_verify_completion() {
     let (env, client, quest_client, owner) = setup();
-    create_ms(&env, &client, &quest_client, &owner, 0, "Deploy a contract", 100);
+    create_ms(
+        &env,
+        &client,
+        &quest_client,
+        &owner,
+        0,
+        "Deploy a contract",
+        100,
+    );
 
     let enrollee = Address::generate(&env);
     let reward = client.verify_completion(&owner, &0, &0, &enrollee);
@@ -290,7 +306,7 @@ fn test_competitive_mode_limited_winners() {
 /// becomes the permanent milestone authority for that quest. The legitimate
 /// quest owner is locked out because the first caller sets the cached owner with
 /// no cross-contract validation against the quest contract.
-/// 
+///
 /// FIX: Now validates ownership via cross-contract call to quest contract.
 /// The attacker cannot seize authority because they don't own the quest.
 #[test]
@@ -315,7 +331,7 @@ fn test_milestone_ownership_race_condition() {
         &String::from_str(&env, "Description"),
         &9999,
     );
-    
+
     // Attack fails - attacker is not the quest owner
     assert_eq!(result, Err(Ok(Error::OwnerMismatch)));
 
@@ -333,7 +349,7 @@ fn test_milestone_ownership_race_condition() {
     let enrollee = Address::generate(&env);
     let reward = client.verify_completion(&legitimate_owner, &0, &0, &enrollee);
     assert_eq!(reward, 100);
-    
+
     // Attacker cannot verify completions
     let result = client.try_verify_completion(&attacker, &0, &0, &enrollee);
     assert_eq!(result, Err(Ok(Error::Unauthorized)));
@@ -362,10 +378,10 @@ fn test_verify_completion_no_enrollment_check() {
 #[test]
 fn test_set_verification_mode() {
     let (_env, client, _quest_client, owner) = setup();
-    
+
     // Set peer review mode requiring 2 approvals
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(2));
-    
+
     // Test that we can retrieve mode (would need a getter function)
     // For now, just test that it doesn't error
 }
@@ -374,15 +390,15 @@ fn test_set_verification_mode() {
 fn test_submit_for_review() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     // Set peer review mode
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(2));
-    
+
     let enrollee = Address::generate(&env);
-    
+
     // Submit for review should succeed
     client.submit_for_review(&enrollee, &0, &0);
-    
+
     // Submitting again should fail
     let result = client.try_submit_for_review(&enrollee, &0, &0);
     assert_eq!(result, Err(Ok(Error::AlreadySubmitted)));
@@ -392,10 +408,10 @@ fn test_submit_for_review() {
 fn test_submit_for_review_owner_only_mode_fails() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     // Don't set verification mode (defaults to OwnerOnly)
     let enrollee = Address::generate(&env);
-    
+
     // Submit for review should fail in OwnerOnly mode
     let result = client.try_submit_for_review(&enrollee, &0, &0);
     assert_eq!(result, Err(Ok(Error::Unauthorized)));
@@ -405,21 +421,21 @@ fn test_submit_for_review_owner_only_mode_fails() {
 fn test_approve_completion() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     // Set peer review mode requiring 1 approval
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(1));
-    
+
     let enrollee = Address::generate(&env);
     let peer = Address::generate(&env);
-    
+
     // Submit for review
     client.submit_for_review(&enrollee, &0, &0);
-    
+
     // Approve - should complete and return reward
     let result = client.approve_completion(&peer, &0, &0, &enrollee);
     assert!(result.is_some());
     assert_eq!(result.unwrap(), 100);
-    
+
     // Should be marked as completed
     assert!(client.is_completed(&0, &0, &enrollee));
 }
@@ -428,22 +444,22 @@ fn test_approve_completion() {
 fn test_approve_completion_multiple_approvals() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     // Set peer review mode requiring 2 approvals
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(2));
-    
+
     let enrollee = Address::generate(&env);
     let peer1 = Address::generate(&env);
     let peer2 = Address::generate(&env);
-    
+
     // Submit for review
     client.submit_for_review(&enrollee, &0, &0);
-    
+
     // First approval - should not complete yet
     let result1 = client.approve_completion(&peer1, &0, &0, &enrollee);
     assert!(result1.is_none());
     assert!(!client.is_completed(&0, &0, &enrollee));
-    
+
     // Second approval - should complete
     let result2 = client.approve_completion(&peer2, &0, &0, &enrollee);
     assert!(result2.is_some());
@@ -455,14 +471,14 @@ fn test_approve_completion_multiple_approvals() {
 fn test_self_approval_fails() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(1));
-    
+
     let enrollee = Address::generate(&env);
-    
+
     // Submit for review
     client.submit_for_review(&enrollee, &0, &0);
-    
+
     // Try to approve own submission - should fail
     let result = client.try_approve_completion(&enrollee, &0, &0, &enrollee);
     assert_eq!(result, Err(Ok(Error::InvalidApprover)));
@@ -472,18 +488,18 @@ fn test_self_approval_fails() {
 fn test_double_approval_fails() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(2));
-    
+
     let enrollee = Address::generate(&env);
     let peer = Address::generate(&env);
-    
+
     // Submit for review
     client.submit_for_review(&enrollee, &0, &0);
-    
+
     // First approval should succeed
     client.approve_completion(&peer, &0, &0, &enrollee);
-    
+
     // Second approval from same peer should fail
     let result = client.try_approve_completion(&peer, &0, &0, &enrollee);
     assert_eq!(result, Err(Ok(Error::AlreadyApproved)));
@@ -493,12 +509,12 @@ fn test_double_approval_fails() {
 fn test_approve_nonexistent_submission_fails() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(1));
-    
+
     let enrollee = Address::generate(&env);
     let peer = Address::generate(&env);
-    
+
     // Try to approve without submitting first - should fail
     let result = client.try_approve_completion(&peer, &0, &0, &enrollee);
     assert_eq!(result, Err(Ok(Error::NotSubmitted)));
@@ -508,16 +524,16 @@ fn test_approve_nonexistent_submission_fails() {
 fn test_approve_already_completed_fails() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(1));
-    
+
     let enrollee = Address::generate(&env);
     let peer = Address::generate(&env);
-    
+
     // Submit for review and approve
     client.submit_for_review(&enrollee, &0, &0);
     client.approve_completion(&peer, &0, &0, &enrollee);
-    
+
     // Try to approve again after completion - should fail
     let result = client.try_approve_completion(&peer, &0, &0, &enrollee);
     assert_eq!(result, Err(Ok(Error::AlreadyCompleted)));
@@ -527,16 +543,16 @@ fn test_approve_already_completed_fails() {
 fn test_approve_owner_only_mode_fails() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     // Don't set verification mode (defaults to OwnerOnly)
-    
+
     let enrollee = Address::generate(&env);
     let _peer = Address::generate(&env);
-    
+
     // Submit for review should fail
     let result = client.try_submit_for_review(&enrollee, &0, &0);
     assert_eq!(result, Err(Ok(Error::Unauthorized)));
-    
+
     // Even if we could submit, approval should fail
     // (This test assumes we could somehow bypass the submission check)
 }
@@ -545,19 +561,19 @@ fn test_approve_owner_only_mode_fails() {
 fn test_peer_verification_with_different_distribution_modes() {
     let (env, client, quest_client, owner) = setup();
     create_ms(&env, &client, &quest_client, &owner, 0, "Task", 100);
-    
+
     // Set peer review mode
     client.set_verification_mode(&owner, &0, &VerificationMode::PeerReview(1));
-    
+
     // Test with Flat distribution mode
     client.set_distribution_mode(&owner, &0, &DistributionMode::Flat, &200);
-    
+
     let enrollee = Address::generate(&env);
     let peer = Address::generate(&env);
-    
+
     // Submit for review
     client.submit_for_review(&enrollee, &0, &0);
-    
+
     // Approve - should return flat reward amount
     let result = client.approve_completion(&peer, &0, &0, &enrollee);
     assert!(result.is_some());
